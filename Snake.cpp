@@ -20,7 +20,6 @@ bool Snake::addHead(Vector2u pos){
 }
 
 bool Snake::moveSnake(const int &x, const int &y) {
-	Vector2u nextPos;
 	if (x > (int)_map->getSize()-1) {
 		nextPos = Vector2u(0, y);
 	}
@@ -38,7 +37,8 @@ bool Snake::moveSnake(const int &x, const int &y) {
 	}
 
 	if (nextPos != _part_pos[_part_pos.size() - 2]) {
-	if (_map->checkTile(nextPos, Map::TREAT)) {
+	if (_map->checkTile(nextPos, Map::TREAT) || _map->checkTile(nextPos,Map::FINISH)) {
+		if (_map->checkTile(nextPos, Map::FINISH))_VICTORY = true;
 			_map->setTileType(nextPos, Map::SNAKE_HEAD);
 			_part_pos.push_back(nextPos);
 			_snake_fat_body.push_back(true);
@@ -48,6 +48,7 @@ bool Snake::moveSnake(const int &x, const int &y) {
 			//_map->spawnTreat();
 		return true;
 	}
+	
 	else /*if (_map->checkTile(nextPos, Map::AIR))*/ {
 		_map->resetTile(_part_pos.front());
 			for (int i = 0; i < _part_pos.size() - 1; i++) {
@@ -244,6 +245,7 @@ bool Snake::checkColide(){
 	LOOP(_part_pos.size() - 1) {
 		if (_part_pos.back() == _part_pos[i])return true;
 	}
+	if (_map->checkTile(nextPos, Map::OBSTACLE))return true;
 	return false;
 }
 bool checkColide(const Snake &s1,const Snake &s2){
@@ -282,7 +284,7 @@ inline void Snake::updateSnakeTiles(){
 }
 void Snake::updateSnakeTextures(){
 	//update map with snake parts, set maps tile textures
-	for (size_t i = 0; i < _part_pos.size(); i++)_map->updateTile(_part_pos[i], type);
+	for (size_t i = 0; i < _part_pos.size(); i++)_map->updateSnakeTile(_part_pos[i], type);
 }
 bool Snake::update(){
 	/*

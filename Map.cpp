@@ -32,6 +32,53 @@ Map::Map(const size_t &num,const Vector2u &window_size,Color col)
 	_background.setOutlineThickness(2);
 }
 
+Map::Map(Level* level, const Vector2u& window_size)
+{
+	_level = level;
+	_size = _level->SIZE;
+	_map = new Tile * *[_size];
+	Vector2f pos;
+	Vector2f size;
+	size.x = (float)window_size.x / _size;
+	size.y = (float)window_size.y / _size;
+	pos.x = MAP_OFFSET_X;
+	pos.y = MAP_OFFSET_Y;
+	for (size_t y = 0; y < _size; y++) {
+		_map[y] = new Tile * [_size];
+		for (size_t x = 0; x < _size; x++) {
+			_map[y][x] = new Tile(size, pos);
+			switch (_level->level_map[x][y]) {
+			case 0:
+				_map[y][x]->setType(AIR);
+				break;
+			case 1:
+				_map[y][x]->setType(OBSTACLE);
+				break;
+			case 2:
+				_map[y][x]->setType(AIR);
+				_exit_pos = Vector2u(x, y);
+				break;
+			case 3:
+				_snake_head_spawn_pos = Vector2u(y, x);
+				break;
+			case 4:
+				_snake_tail_spawn_pos = Vector2u(y, x);
+				break;
+			}
+			pos.x += (float)window_size.x / _size;
+			if (pos.x >= window_size.x) {
+				pos.y += (float)window_size.y / _size;
+				pos.x = MAP_OFFSET_X;
+			}
+		}
+	}
+	
+	_background.setSize(Vector2f(window_size.x, window_size.y));
+	_background.setFillColor(Color::White);
+	_background.setOutlineColor(Color::Black);
+	_background.setOutlineThickness(2);
+}
+
 
 Map::~Map(){
 	for (size_t y = 0; y < _size; y++){
@@ -48,11 +95,16 @@ void Map::setTileType(const Vector2u &coor, const TILE_TYPE &type){
 	_map[coor.y][coor.x]->setType(type);
 }
 
-void Map::updateTile(const Vector2u & pos, const unsigned short & type){
+void Map::updateSnakeTile(const Vector2u & pos, const unsigned short & type){
 #ifdef DEBUG
 	showBitmap();
 #endif
 	_map[pos.y][pos.x]->updateSnakeParts(type);
+}
+
+void Map::updateNoSnakeTile(const Vector2u& pos)
+{
+	_map[pos.y][pos.x]->updateNoSnake();
 }
 
 bool Map::checkTile(const Vector2u & pos, const TILE_TYPE &type){
@@ -62,6 +114,12 @@ bool Map::checkTile(const Vector2u & pos, const TILE_TYPE &type){
 
 void Map::rotateTile(const Vector2u & pos, const float & angle){
 	_map[pos.y][pos.x]->rotate(angle);
+}
+
+void Map::spawnSnake(Snake* snake)
+{
+	snake->addHead(Vector2u(_snake_head_spawn_pos.y, _snake_head_spawn_pos.x));
+	snake->addTail(Vector2u(_snake_head_spawn_pos.y, _snake_head_spawn_pos.x));
 }
 
 void Map::resetTile(const Vector2u &pos){
@@ -93,7 +151,20 @@ void Map::spawnTreat()
 	}
 }
 
+void Map::openExit(){
+	if (!_exitOpen) {
+		_exitOpen = true;
+		_map[_exit_pos.y][_exit_pos.x]->setType(FINISH);
+		updateNoSnakeTile(_exit_pos);
+	}
+}
 
+void Map::updateExit(){
+	if (_exitOpen) {
+		_map[_exit_pos.y][_exit_pos.x]->setType(FINISH);
+		updateNoSnakeTile(_exit_pos);
+	}
+}
 
 void Map::clear(){
 	LOOPY(_size) {
@@ -102,7 +173,6 @@ void Map::clear(){
 		}
 	}
 }
-
 
 void Map::update(){
 
@@ -167,11 +237,14 @@ void Map::Tile::updateNoSnake() {
 		_body.setFillColor(Color::Transparent);
 		_body.setTextureRect(IntRect(0, 0, s_c, s_c));
 		break;
+	case FINISH:
+		_body.setFillColor(Color::White);
+		_body.setTextureRect(IntRect(2 * s_c, 0, s_c, s_c));
+		break;
 	}
 }
 
 void Map::Tile::update() {
-	_body.setFillColor(Color::White);
 	unsigned type = 0;
 	switch (_type) {
 	case SNAKE_BODYI:
@@ -193,11 +266,17 @@ void Map::Tile::update() {
 		_body.setTextureRect(IntRect(5 * s_c, 2 * s_c + s_c * type, s_c, s_c));
 		break;
 	case AIR:
-		_body.setFillColor(Color::Transparent);
 		_body.setTextureRect(IntRect(0, 0, s_c, s_c));
 		break;
 	case TREAT:
 		_body.setTextureRect(IntRect(s_c*_treatID, s_c, s_c, s_c));
+		break;
+	case OBSTACLE:
+		_body.setTextureRect(IntRect(1 * s_c, 0, s_c, s_c));
+		break;
+	case FINISH:
+		_body.setFillColor(Color::Green);
+		_body.setTextureRect(IntRect(2 * s_c, 0, s_c, s_c));
 		break;
 	}
 }

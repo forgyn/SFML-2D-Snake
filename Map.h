@@ -4,6 +4,7 @@
 #include <ctime>
 #include <iostream>
 #include "Snake.h"
+#include "Level.h"
 #define LOOP(n)for(size_t i = 0;i<n;i++)
 #define LOOPX(n)for(size_t x = 0;x<n;x++)
 #define LOOPY(n)for(size_t y = 0;y<n;y++)
@@ -21,7 +22,7 @@ class Snake;
 
 class Map{
 public:
-	enum TILE_TYPE {ERROR,AIR,SNAKE_HEAD,SNAKE_BODYI,SNAKE_BODYL,SNAKE_BODYLO,SNAKE_BODYO,SNAKE_BODYIL,SNAKE_TAIL,TREAT};
+	enum TILE_TYPE {ERROR,AIR,SNAKE_HEAD,SNAKE_BODYI,SNAKE_BODYL,SNAKE_BODYLO,SNAKE_BODYO,SNAKE_BODYIL,SNAKE_TAIL,TREAT,OBSTACLE,FINISH};
 	struct Tile {
 		Tile(const Vector2f &size, const Vector2f &pos);
 			
@@ -54,18 +55,23 @@ public:
 		TILE_TYPE _type = AIR;
 	};
 	Map(const size_t &, const Vector2u &vm ,Color = Color::White);
+	Map(Level* level, const Vector2u& vm);
 	~Map();
 	void update();
 	void draw(RenderWindow &window);
 	Tile ***getMap() { return _map; }
 	void setTileType(const Vector2u &,const TILE_TYPE &);
-	void updateTile(const Vector2u &pos,const unsigned short &type);
+	void updateSnakeTile(const Vector2u &pos,const unsigned short &type);
+	void updateNoSnakeTile(const Vector2u& pos);
 	bool checkTile(const Vector2u &, const TILE_TYPE &);
 	void rotateTile(const Vector2u &, const float &);
 	void updateNoSnake();
+	void spawnSnake(Snake* snake);
 	void resetTile(const Vector2u &);
 	void clear();
 	void spawnTreat();
+	void openExit();
+	void updateExit();
 	//debug funkce
 #ifdef DEBUG
 	void showBitmap() {
@@ -81,7 +87,12 @@ public:
 	static std::default_random_engine randomGenerator;
 private:
 	Tile ***_map = nullptr;
+	Level* _level = nullptr;
+	Vector2u _snake_head_spawn_pos;
+	Vector2u _snake_tail_spawn_pos;
+	Vector2u _exit_pos;
 	size_t _size;
 	RectangleShape _background;
+	bool _exitOpen = false;
 };
 

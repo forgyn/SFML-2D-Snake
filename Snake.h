@@ -50,12 +50,15 @@ public:
 	void updateSnakeTextures();
 	size_t getSize() { return _part_pos.size(); }
 	bool update();
+	bool victory() { return _VICTORY; }
 	~Snake();
 	const unsigned short type;
 private:
+	bool _VICTORY = false;
 	LOOK_DIRECTION _direction;
 	LOOK_DIRECTION _prev_direction;
 	STATE _state;
+	Vector2u nextPos;
 	bool _feeded;
 	Map *_map = nullptr;
 	std::vector<Vector2u> _part_pos;
